@@ -36,21 +36,35 @@ export default function TeacherDashboard() {
 
         if (coursesError) throw coursesError;
 
-        // Для кожного курсу отримуємо кількість студентів
         const coursesWithStudentCount = await Promise.all(
           coursesData.map(async (course) => {
-            const { count, error } = await supabase
-              .from('enrollments')
-              .select('*', { count: 'exact', head: true })
-              .eq('course_id', course.id);
+            try {
+              const { count, error } = await supabase
+                .from('enrollments')
+                .select('*', { count: 'exact', head: true })
+                .eq('course_id', course.id);
 
-            return {
-              ...course,
-              student_count: count || 0
-            };
+              if (error) {
+                console.error(`Помилка при отриманні кількості студентів для курсу ${course.id}:`, error);
+                return {
+                  ...course,
+                  student_count: 0
+                };
+              }
+
+              return {
+                ...course,
+                student_count: count || 0
+              };
+            } catch (err) {
+              console.error(`Помилка при обробці курсу ${course.id}:`, err);
+              return {
+                ...course,
+                student_count: 0
+              };
+            }
           })
         );
-
         setCourses(coursesWithStudentCount);
       } catch (error) {
         console.error('Помилка при завантаженні курсів:', error);

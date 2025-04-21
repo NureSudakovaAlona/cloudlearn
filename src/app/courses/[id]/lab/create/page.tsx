@@ -10,7 +10,7 @@ export default function CreateLabPage() {
   const params = useParams();
   const router = useRouter();
   const { data: session } = useSession();
-  const [course, setCourse] = useState(null);
+  const [_course, setCourse] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -74,7 +74,7 @@ export default function CreateLabPage() {
       setError('');
 
       // Створюємо нову лабораторну роботу
-      const { data, error } = await supabase.from('lab_works').insert({
+      const { data: _, error } = await supabase.from('lab_works').insert({
         course_id: courseId,
         title: formData.title,
         description: formData.description,

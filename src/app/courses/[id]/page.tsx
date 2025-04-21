@@ -73,7 +73,7 @@ export default function CoursePage() {
 
         // Перевіряємо, чи студент записаний на курс
         if (session?.user?.id && session.user.role === 'student') {
-          const { data: enrollmentData, error: enrollmentError } = await supabase
+          const { data: _enrollmentData, error: enrollmentError } = await supabase
             .from('enrollments')
             .select('id')
             .eq('student_id', session.user.id)
