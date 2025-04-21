@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Layout from '@/components/Layout';
-import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
-import bcrypt from 'bcryptjs';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Layout from "@/components/Layout";
+import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import bcrypt from "bcryptjs";
 
 export default function SignUp() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    fullName: '',
+    email: "",
+    password: "",
+    fullName: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,18 +27,18 @@ export default function SignUp() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       // Перевіряємо, чи існує користувач
       const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', formData.email)
+        .from("users")
+        .select("id")
+        .eq("email", formData.email)
         .single();
 
       if (existingUser) {
-        setError('Користувач з такою електронною поштою вже існує');
+        setError("Користувач з такою електронною поштою вже існує");
         setLoading(false);
         return;
       }
@@ -47,11 +47,11 @@ export default function SignUp() {
       const hashedPassword = await bcrypt.hash(formData.password, 10);
 
       // Створюємо нового користувача
-      const { error } = await supabase.from('users').insert({
+      const { error } = await supabase.from("users").insert({
         email: formData.email,
         password: hashedPassword,
         full_name: formData.fullName,
-        role: 'student', // Роль за замовчуванням
+        role: "student", // Роль за замовчуванням
       });
 
       if (error) {
@@ -59,10 +59,10 @@ export default function SignUp() {
       }
 
       // Перенаправляємо на сторінку входу
-      router.push('/auth/signin');
+      router.push("/auth/signin");
     } catch (error) {
-      console.error('Помилка при реєстрації:', error);
-      setError('Сталася помилка під час реєстрації');
+      console.error("Помилка при реєстрації:", error);
+      setError("Сталася помилка під час реєстрації");
     } finally {
       setLoading(false);
     }
@@ -81,7 +81,7 @@ export default function SignUp() {
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="fullName" className="block text-gray-700 mb-2">Повне ім'я</label>
+            <label htmlFor="fullName" className="block text-gray-700 mb-2">Повне ім"я</label>
             <input
               id="fullName"
               name="fullName"
@@ -124,12 +124,12 @@ export default function SignUp() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-blue-300"
           >
-            {loading ? 'Створення облікового запису...' : 'Зареєструватися'}
+            {loading ? "Створення облікового запису..." : "Зареєструватися"}
           </button>
           
           <div className="mt-4 text-center">
             <p>
-              Вже маєте обліковий запис?{' '}
+              Вже маєте обліковий запис?{" "}
               <Link href="/auth/signin" className="text-blue-600 hover:underline">
                 Увійти
               </Link>

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import Layout from '@/components/Layout';
-import Link from 'next/link';
+import Layout from "@/components/Layout";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -14,7 +14,7 @@ export default function Home() {
         <div className="max-w-3xl mx-auto">
           <p className="mb-8">
             CloudLearn дозволяє проводити практичні лабораторні роботи у віртуальному середовищі 
-            без встановлення спеціалізованого програмного забезпечення на комп'ютери студентів.
+            без встановлення спеціалізованого програмного забезпечення на комп"ютери студентів.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-blue-50 p-6 rounded-lg">
@@ -27,7 +27,7 @@ export default function Home() {
             </div>
             <div className="bg-blue-50 p-6 rounded-lg">
               <h2 className="text-xl font-semibold mb-2">Відстеження прогресу</h2>
-              <p>Система оцінювання та зворотнього зв'язку від викладачів</p>
+              <p>Система оцінювання та зворотнього зв"язку від викладачів</p>
             </div>
           </div>
           <div className="mt-8">
