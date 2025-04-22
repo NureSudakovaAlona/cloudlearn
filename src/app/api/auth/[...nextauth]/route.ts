@@ -1,70 +1,115 @@
-import NextAuth from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import bcrypt from 'bcryptjs';
-import { supabase } from '@/lib/supabase';
+import NextAuth from 'next-auth'
+import CredentialsProvider from 'next-auth/providers/credentials'
+import bcryptjs from 'bcryptjs'
+import { supabase } from '@/lib/supabase'
+import { NextAuthOptions } from 'next-auth'
 
-const handler = NextAuth({
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          return null;
+          return null
         }
 
-        // Отримуємо користувача з бази даних
-        const { data, error } = await supabase
+        // Пошук користувача в таблиці `users`
+        const { data: userData, error: userError } = await supabase
           .from('users')
           .select('*')
           .eq('email', credentials.email)
-          .single();
+          .single()
 
-        if (error || !data) {
-          return null;
+        if (userError || !userData) {
+          return null
         }
 
-        // Перевіряємо пароль
-        const isPasswordValid = await bcrypt.compare(credentials.password, data.password);
-        
+        // Перевірка паролю
+        const isPasswordValid = await bcryptjs.compare(
+          credentials.password,
+          userData.password
+        )
         if (!isPasswordValid) {
-          return null;
+          return null
+        }
+
+        // Спроба автентифікації в Supabase Auth
+        const { data: supabaseAuth, error: supabaseError } =
+          await supabase.auth.signInWithPassword({
+            email: credentials.email,
+            password: credentials.password,
+          })
+
+        let supabaseToken: string | undefined
+
+        if (supabaseError) {
+          // Якщо користувача ще немає в Supabase Auth — створюємо його
+          if (supabaseError.status === 400) {
+            const { data: signUpData, error: signUpError } =
+              await supabase.auth.signUp({
+                email: credentials.email,
+                password: credentials.password,
+              })
+
+            if (signUpError) {
+              console.error('Помилка створення Supabase користувача:', signUpError)
+            } else {
+              supabaseToken = signUpData.session?.access_token
+            }
+          } else {
+            console.error('Помилка автентифікації в Supabase:', supabaseError)
+          }
+        } else {
+          supabaseToken = supabaseAuth.session?.access_token
         }
 
         return {
-          id: data.id,
-          email: data.email,
-          name: data.full_name,
-          role: data.role,
-        };
-      }
-    })
+          id: userData.id,
+          email: userData.email,
+          name: userData.full_name,
+          role: userData.role,
+          supabaseToken,
+        }
+      },
+    }),
   ],
+
   session: {
     strategy: 'jwt',
   },
+
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = user.role;
-        token.id = user.id;
+        token.id = user.id
+        token.role = user.role
+        if ('supabaseToken' in user) {
+          token.supabaseToken = user.supabaseToken
+        }
       }
-      return token;
+      return token
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.role = token.role;
-        session.user.id = token.id;
+        session.user.id = token.id as string
+        session.user.role = token.role as string
       }
-      return session;
+
+      // Додаємо accessToken в сесію
+      session.accessToken = token.supabaseToken as string | undefined
+      return session
     },
   },
+
   pages: {
     signIn: '/auth/signin',
   },
-});
+}
 
-export { handler as GET, handler as POST };
+// Це важливо для App Router
+const handler = NextAuth(authOptions)
+export { handler as GET, handler as POST }

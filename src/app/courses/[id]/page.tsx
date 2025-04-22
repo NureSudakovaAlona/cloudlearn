@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Layout from '@/components/Layout';
 import { supabase } from '@/lib/supabase';
+import MaterialUploadForm from '@/components/MaterialUploadForm';
+import { getFileUrl } from '@/lib/storageUtils'; // Змінено імпорт
 
 interface CourseDetails {
   id: string;
@@ -20,6 +22,15 @@ interface LabWork {
   description: string;
 }
 
+interface Resource {
+  id: string;
+  title: string;
+  type: string;
+  file_path: string;
+  created_at: string;
+  file_url?: string;
+}
+
 export default function CoursePage() {
   const params = useParams();
   const router = useRouter();
@@ -29,6 +40,7 @@ export default function CoursePage() {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [resources, setResources] = useState<Resource[]>([]);
 
   const courseId = typeof params.id === 'string' ? params.id : '';
 
@@ -73,7 +85,7 @@ export default function CoursePage() {
 
         // Перевіряємо, чи студент записаний на курс
         if (session?.user?.id && session.user.role === 'student') {
-          const { data: _enrollmentData, error: enrollmentError } = await supabase
+          const { data: enrollmentData, error: enrollmentError } = await supabase
             .from('enrollments')
             .select('id')
             .eq('student_id', session.user.id)
@@ -88,6 +100,27 @@ export default function CoursePage() {
         // Якщо користувач - викладач курсу, він має доступ
         if (session?.user?.id === courseData.teacher_id) {
           setIsEnrolled(true);
+        }
+        
+        // Отримуємо навчальні матеріали - переміщено сюди з основного тіла компоненту
+        const { data: resourcesData, error: resourcesError } = await supabase
+          .from('resources')
+          .select('*')
+          .eq('course_id', courseId)
+          .order('created_at', { ascending: false });
+
+        if (!resourcesError && resourcesData) {
+          // Отримуємо URL для файлів
+          const resourcesWithUrls = await Promise.all(
+            resourcesData.map(async (resource) => {
+              const fileUrl = await getFileUrl('course-materials', resource.file_path);
+              return {
+                ...resource,
+                file_url: fileUrl
+              };
+            })
+          );
+          setResources(resourcesWithUrls);
         }
       } catch (error) {
         console.error('Помилка при завантаженні даних курсу:', error);
@@ -189,6 +222,48 @@ export default function CoursePage() {
                   >
                     Перейти до роботи
                   </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">Навчальні матеріали</h2>
+          
+          {session?.user?.id === course.teacher_id && (
+            <MaterialUploadForm courseId={courseId} />
+          )}
+          
+          {resources.length === 0 ? (
+            <p className="text-gray-600 py-4">Для цього курсу ще не додано навчальних матеріалів.</p>
+          ) : (
+            <div className="grid gap-4">
+              {resources.map(resource => (
+                <div key={resource.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">{resource.title}</h3>
+                    <span className={`px-2 py-1 rounded text-xs uppercase ${
+                      resource.type === 'pdf' ? 'bg-red-100 text-red-800' :
+                      resource.type === 'video' ? 'bg-blue-100 text-blue-800' :
+                      resource.type === 'code' ? 'bg-purple-100 text-purple-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {resource.type}
+                    </span>
+                  </div>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Додано: {new Date(resource.created_at).toLocaleDateString('uk-UA')}
+                  </p>
+                  <div className="mt-2">
+                    <a 
+                      href={resource.file_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Переглянути матеріал
+                    </a>
+                  </div>
                 </div>
               ))}
             </div>
