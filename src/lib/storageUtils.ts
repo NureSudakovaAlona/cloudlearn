@@ -11,7 +11,7 @@ async function getSupabaseClient() {
   }
 
   const session = await getSession();
-  const supabaseToken = session?.supabaseToken;
+  const supabaseToken = session?.accessToken;
 
   console.log('Supabase токен з сесії:', supabaseToken ? 'отримано' : 'відсутній');
 

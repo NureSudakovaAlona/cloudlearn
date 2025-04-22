@@ -1,27 +1,21 @@
-import { createClient } from '@supabase/supabase-js';
-import { useSession } from 'next-auth/react';
+// src/lib/supabaseClient.ts
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+export async function getSupabaseClient() {
+  const cookieStore = await cookies()
 
-// Стандартний клієнт для анонімних запитів
-export const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+      },
+    }
+  )
 
-// Хук для отримання клієнта з токеном аутентифікації
-export function useSupabaseClient() {
-  const { data: session } = useSession();
-  
-  if (session?.supabaseToken) {
-    // Створюємо клієнт з токеном користувача
-    return createClient(supabaseUrl, supabaseKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${session.supabaseToken}`
-        }
-      }
-    });
-  }
-  
-  // Повертаємо стандартний клієнт, якщо немає токена
-  return supabase;
+  return supabase
 }
