@@ -66,14 +66,32 @@ export default function LabPage() {
         if (courseError) throw courseError;
         setCourseName(courseData.title);
 
-        // Перевіряємо, чи є вже відправлена робота
-        const { data: submissionData, error: submissionError } = await supabase
+
+      // Тепер виконайте запит і виведіть SQL-помилку, якщо вона є
+      const { data: submissionData, error: submissionError } = await supabase
         .from('submissions')
         .select('*')
         .eq('student_id', session.user.id)
         .eq('lab_id', labId)
-        .single();
-      
+        .maybeSingle();
+
+      console.log("Помилка запиту:", submissionError);
+      console.log("NextAuth user ID:", session.user.id);
+      console.log("ID в таблиці submissions:", 'b3684ebb-0eb3-42a4-817f-27bebf830cd5');
+      console.log("IDs співпадають:", session.user.id === 'b3684ebb-0eb3-42a4-817f-27bebf830cd5');
+
+      // Перевірте запит без фільтрації, якщо маєте права адміністратора
+      const { data: allRecords, error: allError } = await supabase
+      .from('submissions')
+      .select('*')
+      .limit(10);
+
+      console.log("Перші 10 записів:", allRecords);
+            // Перевірте поточного користувача Supabase
+            const { data: { session: supabaseSession } } = await supabase.auth.getSession();
+            console.log("Supabase user:", supabaseSession?.user?.id);
+            console.log("NextAuth session:", session);
+            
         if (!submissionError && submissionData) {
           // Отримуємо URL файлу
           const fileUrl = await getFileUrl('lab-submissions', submissionData.file_path);
