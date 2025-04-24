@@ -11,6 +11,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto flex justify-between items-center">
           <Link href="/" className="text-2xl font-bold">CloudLearn</Link>
           <nav className="space-x-4">
+          <Link href="/photos" className="hover:underline">Upload Photos</Link>
             <Link href="/courses" className="hover:underline">Курси</Link>
             {session?.user?.role === 'teacher' && (
               <Link href="/dashboard/teacher" className="hover:underline">Панель викладача</Link>
